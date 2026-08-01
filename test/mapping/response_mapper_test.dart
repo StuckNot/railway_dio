@@ -3,16 +3,28 @@ import 'package:fpdart/fpdart.dart';
 import 'package:railway_dio/railway_dio.dart';
 import 'package:test/test.dart';
 
+class MockResponse {
+  final String result;
+  const MockResponse(this.result);
+}
+
 void main() {
-  Future<Either<NetworkFailure, String>> mockSuccessResponse(
-    int statusCode,
-  ) async {
-    final response = Response<String>(
+  Future<Either<NetworkFailure, dynamic>> mockSuccessResponse(
+    int statusCode, {
+    dynamic data = '',
+    bool passDecoder = false,
+  }) async {
+    final response = Response<dynamic>(
       requestOptions: RequestOptions(),
-      data: '',
+      data: data,
       statusCode: statusCode,
     );
-    return Future.value(response).toEither();
+    if (passDecoder) {
+      return Future.value(response).toEither<MockResponse>(
+        (data) => MockResponse(data.toString()),
+      );
+    }
+    return Future.value(response).toEither<dynamic>();
   }
 
   Future<Either<NetworkFailure, String>> mockDioBadResponse(
@@ -35,9 +47,25 @@ void main() {
       expect(result, right(''));
     });
 
+    test('status code 200 (success) with decoder', () async {
+      final result = await mockSuccessResponse(
+        200,
+        data: 'hello',
+        passDecoder: true,
+      );
+      expect(result.isRight(), isTrue);
+      final mockObj = (result as Right<NetworkFailure, dynamic>).value as MockResponse;
+      expect(mockObj.result, 'hello');
+    });
+
     test('status code 203 (success)', () async {
       final result = await mockSuccessResponse(203);
       expect(result, right(''));
+    });
+
+    test('null response body (e.g. 204 No Content)', () async {
+      final result = await mockSuccessResponse(204, data: null);
+      expect(result, right(null));
     });
 
     test('status code 401', () async {
