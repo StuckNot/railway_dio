@@ -4,6 +4,7 @@ import 'package:railway_dio/railway_dio.dart';
 import 'package:test/test.dart';
 
 class HttpClientAdapterMock extends Mock implements HttpClientAdapter {}
+
 class MockInterceptor extends Mock implements Interceptor {}
 
 void main() {

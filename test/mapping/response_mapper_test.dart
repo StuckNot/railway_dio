@@ -4,7 +4,9 @@ import 'package:railway_dio/railway_dio.dart';
 import 'package:test/test.dart';
 
 void main() {
-  Future<Either<NetworkFailure, String>> mockSuccessResponse(int statusCode) async {
+  Future<Either<NetworkFailure, String>> mockSuccessResponse(
+    int statusCode,
+  ) async {
     final response = Response<String>(
       requestOptions: RequestOptions(),
       data: '',
@@ -13,7 +15,9 @@ void main() {
     return Future.value(response).toEither();
   }
 
-  Future<Either<NetworkFailure, String>> mockDioBadResponse(int statusCode) async {
+  Future<Either<NetworkFailure, String>> mockDioBadResponse(
+    int statusCode,
+  ) async {
     final dioException = DioException(
       requestOptions: RequestOptions(),
       type: DioExceptionType.badResponse,
@@ -62,7 +66,9 @@ void main() {
         requestOptions: RequestOptions(),
         type: DioExceptionType.connectionTimeout,
       );
-      final result = await Future<Response<String>>.error(dioException).toEither();
+      final result = await Future<Response<String>>.error(
+        dioException,
+      ).toEither();
       expect(result, left(const NetworkFailure.timeout()));
     });
 
@@ -72,8 +78,58 @@ void main() {
         type: DioExceptionType.connectionError,
         message: 'No internet',
       );
-      final result = await Future<Response<String>>.error(dioException).toEither();
-      expect(result, left(const NetworkFailure.network(message: 'No internet')));
+      final result = await Future<Response<String>>.error(
+        dioException,
+      ).toEither();
+      expect(
+        result,
+        left(const NetworkFailure.network(message: 'No internet')),
+      );
+    });
+
+    test('on cancel', () async {
+      final dioException = DioException(
+        requestOptions: RequestOptions(),
+        type: DioExceptionType.cancel,
+      );
+      final result = await Future<Response<String>>.error(
+        dioException,
+      ).toEither();
+      expect(
+        result,
+        left(const NetworkFailure.unknown(error: 'Request cancelled')),
+      );
+    });
+
+    test('on badCertificate', () async {
+      final dioException = DioException(
+        requestOptions: RequestOptions(),
+        type: DioExceptionType.badCertificate,
+      );
+      final result = await Future<Response<String>>.error(
+        dioException,
+      ).toEither();
+      expect(
+        result,
+        left(
+          const NetworkFailure.network(message: 'Invalid TLS/SSL certificate'),
+        ),
+      );
+    });
+
+    test('on DioExceptionType.unknown', () async {
+      final dioException = DioException(
+        requestOptions: RequestOptions(),
+        type: DioExceptionType.unknown,
+        error: 'Unknown error occurred',
+      );
+      final result = await Future<Response<String>>.error(
+        dioException,
+      ).toEither();
+      expect(
+        result,
+        left(const NetworkFailure.unknown(error: 'Unknown error occurred')),
+      );
     });
 
     test('on generic Exception', () async {

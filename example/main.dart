@@ -7,18 +7,13 @@ class User {
   User({required this.id, required this.name});
 
   factory User.fromJson(Map<String, dynamic> json) {
-    return User(
-      id: json['id'] as int,
-      name: json['name'] as String,
-    );
+    return User(id: json['id'] as int, name: json['name'] as String);
   }
 }
 
 Future<void> main() async {
   // 1. Build a preconfigured Dio client instance
-  final dio = buildDioClient(
-    baseUrl: 'https://jsonplaceholder.typicode.com',
-  );
+  final dio = buildDioClient(baseUrl: 'https://jsonplaceholder.typicode.com');
 
   // 2. Make an HTTP request and convert it into Either<NetworkFailure, User>
   final result = await dio

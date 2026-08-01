@@ -9,7 +9,7 @@ extension DioResponseToEither<T> on Future<Response<T>> {
   ///
   /// Pass an optional [decoder] to map the raw response data `T` (e.g., Map or List) into type `R`.
   /// Pass an optional [errorDecoder] to map custom backend JSON error payloads into structured models.
-    Future<Either<NetworkFailure, R>> toEither<R>([
+  Future<Either<NetworkFailure, R>> toEither<R>([
     R Function(T data)? decoder,
     Object? Function(dynamic errorData)? errorDecoder,
   ]) async {
@@ -79,7 +79,9 @@ NetworkFailure _mapDioExceptionToFailure(
       return const NetworkFailure.unknown(error: 'Request cancelled');
 
     case DioExceptionType.badCertificate:
-      return const NetworkFailure.network(message: 'Invalid TLS/SSL certificate');
+      return const NetworkFailure.network(
+        message: 'Invalid TLS/SSL certificate',
+      );
 
     case DioExceptionType.unknown:
     default:
