@@ -1,6 +1,7 @@
 # railway_dio
 
 [![pub package](https://img.shields.io/pub/v/railway_dio.svg)](https://pub.dev/packages/railway_dio)
+[![codecov](https://codecov.io/gh/StuckNot/railway_dio/graph/badge.svg?token=8RB3LQZ3WY)](https://codecov.io/gh/StuckNot/railway_dio)
 [![style: lints](https://img.shields.io/badge/style-lints-4BC0F5.svg)](https://pub.dev/packages/lints)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
