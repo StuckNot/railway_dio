@@ -1,0 +1,85 @@
+import 'package:dio/dio.dart';
+import 'package:fpdart/fpdart.dart';
+import 'package:railway_dio/railway_dio.dart';
+import 'package:test/test.dart';
+
+void main() {
+  Future<Either<NetworkFailure, String>> mockSuccessResponse(int statusCode) async {
+    final response = Response<String>(
+      requestOptions: RequestOptions(),
+      data: '',
+      statusCode: statusCode,
+    );
+    return Future.value(response).toEither();
+  }
+
+  Future<Either<NetworkFailure, String>> mockDioBadResponse(int statusCode) async {
+    final dioException = DioException(
+      requestOptions: RequestOptions(),
+      type: DioExceptionType.badResponse,
+      response: Response(
+        requestOptions: RequestOptions(),
+        statusCode: statusCode,
+      ),
+    );
+    return Future<Response<String>>.error(dioException).toEither();
+  }
+
+  group('response mapper test', () {
+    test('status code 200 (success)', () async {
+      final result = await mockSuccessResponse(200);
+      expect(result, right(''));
+    });
+
+    test('status code 203 (success)', () async {
+      final result = await mockSuccessResponse(203);
+      expect(result, right(''));
+    });
+
+    test('status code 401', () async {
+      final result = await mockDioBadResponse(401);
+      expect(result, left(const NetworkFailure.unauthorized()));
+    });
+
+    test('status code 502', () async {
+      final result = await mockDioBadResponse(502);
+      expect(result, left(const NetworkFailure.server(statusCode: 502)));
+    });
+
+    test('status code 301', () async {
+      final result = await mockDioBadResponse(301);
+      expect(result.isLeft(), isTrue);
+      expect(result.getLeft().toNullable(), isA<NetworkUnknownFailure>());
+    });
+
+    test('status code 403', () async {
+      final result = await mockDioBadResponse(403);
+      expect(result, left(const NetworkFailure.clientError(statusCode: 403)));
+    });
+
+    test('on connectionTimeout', () async {
+      final dioException = DioException(
+        requestOptions: RequestOptions(),
+        type: DioExceptionType.connectionTimeout,
+      );
+      final result = await Future<Response<String>>.error(dioException).toEither();
+      expect(result, left(const NetworkFailure.timeout()));
+    });
+
+    test('on connectionError', () async {
+      final dioException = DioException(
+        requestOptions: RequestOptions(),
+        type: DioExceptionType.connectionError,
+        message: 'No internet',
+      );
+      final result = await Future<Response<String>>.error(dioException).toEither();
+      expect(result, left(const NetworkFailure.network(message: 'No internet')));
+    });
+
+    test('on generic Exception', () async {
+      final exception = Exception('boom');
+      final result = await Future<Response<String>>.error(exception).toEither();
+      expect(result, left(NetworkFailure.unknown(error: exception)));
+    });
+  });
+}
