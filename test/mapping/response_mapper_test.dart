@@ -8,6 +8,21 @@ class MockResponse {
   const MockResponse(this.result);
 }
 
+class MockCustomError {
+  final String message;
+  const MockCustomError(this.message);
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is MockCustomError &&
+          runtimeType == other.runtimeType &&
+          message == other.message;
+
+  @override
+  int get hashCode => message.hashCode;
+}
+
 void main() {
   Future<Either<NetworkFailure, dynamic>> mockSuccessResponse(
     int statusCode, {
@@ -87,6 +102,38 @@ void main() {
     test('status code 403', () async {
       final result = await mockDioBadResponse(403);
       expect(result, left(const NetworkFailure.clientError(statusCode: 403)));
+    });
+
+    test('status code 400 with custom errorDecoder', () async {
+      final dioException = DioException(
+        requestOptions: RequestOptions(),
+        type: DioExceptionType.badResponse,
+        response: Response(
+          requestOptions: RequestOptions(),
+          statusCode: 400,
+          data: {'message': 'Invalid parameter'},
+        ),
+      );
+
+      final result = await Future<Response<String>>.error(
+        dioException,
+      ).toEither(
+        null,
+        (errorData) => MockCustomError(
+          (errorData as Map<String, dynamic>)['message'] as String,
+        ),
+      );
+
+      expect(
+        result,
+        left(
+          const NetworkFailure.clientError(
+            statusCode: 400,
+            message: null,
+            errorBody: MockCustomError('Invalid parameter'),
+          ),
+        ),
+      );
     });
 
     test('on connectionTimeout', () async {

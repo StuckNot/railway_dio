@@ -66,20 +66,55 @@ dependencies:
 
 ## Usage
 
+### 1. Without Decoder (Returns raw data)
+If you don't pass a decoder, `.toEither()` returns `Either<NetworkFailure, T>` with the raw response data (e.g. `Map<String, dynamic>` or `List`):
+
 ```dart
 import 'package:railway_dio/railway_dio.dart';
 
-final dio = buildDioClient(
-  baseUrl: 'https://api.example.com',
-);
+final dio = buildDioClient(baseUrl: 'https://api.example.com');
 
-final result = await dio
-    .get<Map<String, dynamic>>('/users/1')
-    .toEither((data) => User.fromJson(data));
+// Returns Either<NetworkFailure, Map<String, dynamic>>
+final result = await dio.get<Map<String, dynamic>>('/users/1').toEither();
 
 result.match(
   (failure) => print('Failed: $failure'),
-  (user) => print('User: ${user.name}'),
+  (json) => print('User Name: ${json['name']}'),
+);
+```
+
+### 2. With Inline Decoder (Returns typed model)
+Pass a decoder function as the first argument to convert the raw response directly into your domain model (e.g., `User`):
+
+```dart
+// Returns Either<NetworkFailure, User>
+final result = await dio.get<Map<String, dynamic>>('/users/1').toEither(
+  (data) => User.fromJson(data),
+);
+
+result.match(
+  (failure) => print('Failed: $failure'),
+  (user) => print('Loaded User: ${user.name}'),
+);
+```
+
+### 3. With Custom Error Decoder (Parses backend error JSON)
+Pass an `errorDecoder` as the second argument to parse structured error payloads from your backend on 4xx/5xx responses:
+
+```dart
+final result = await dio.get<Map<String, dynamic>>('/users/1').toEither(
+  (data) => User.fromJson(data),
+  (errorJson) => ApiError.fromJson(errorJson),
+);
+
+result.match(
+  (failure) {
+    if (failure is NetworkClientFailure && failure.errorBody is ApiError) {
+      final apiError = failure.errorBody as ApiError;
+      print('API Error Code: ${apiError.code}');
+    }
+  },
+  (user) => print('Loaded User: ${user.name}'),
 );
 ```
 
@@ -100,7 +135,11 @@ result.match(
 | `NetworkFailure.unauthorized(errorBody)` | Response status was `401`. |
 | `NetworkFailure.clientError(statusCode, message, errorBody)` | Response status was `4xx` (excluding 401). |
 | `NetworkFailure.server(statusCode, message, errorBody)` | Response status was `5xx`. |
-| `NetworkFailure.unknown(error)` | Any other unexpected exception or request cancellation. |
+## Related Packages
+
+Part of the **Railway Suite** for functional error handling in Dart & Flutter:
+
+- [`railway_chopper`](https://pub.dev/packages/railway_chopper) — Railway-oriented error handling for `package:chopper`.
 
 ## Contributing
 

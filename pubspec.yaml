@@ -1,6 +1,6 @@
 name: railway_dio
 description: "A Dio client factory and a Response -> Either<NetworkFailure, T> mapper for railway-oriented error handling in Flutter/Dart."
-version: 0.1.0
+version: 0.1.1
 homepage: https://github.com/StuckNot/railway_dio
 repository: https://github.com/StuckNot/railway_dio
 topics:
