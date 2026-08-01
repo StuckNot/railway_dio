@@ -7,3 +7,6 @@ build/
 pubspec.lock
 doc/api/
 /lib/generated/
+.idea/
+*.iml
+
