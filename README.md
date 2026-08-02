@@ -2,7 +2,7 @@
 
 [![pub package](https://img.shields.io/pub/v/railway_dio.svg)](https://pub.dev/packages/railway_dio)
 [![pub points](https://img.shields.io/pub/points/railway_dio)](https://pub.dev/packages/railway_dio/score)
-[![CI](https://github.com/StuckNot/railway_chopper/actions/workflows/ci.yml/badge.svg)](https://github.com/StuckNot/railway_chopper/actions/workflows/ci.yml)
+[![CI](https://github.com/StuckNot/railway_dio/actions/workflows/ci.yml/badge.svg)](https://github.com/StuckNot/railway_dio/actions/workflows/ci.yml)
 [![codecov](https://codecov.io/gh/StuckNot/railway_dio/graph/badge.svg?token=8RB3LQZ3WY)](https://codecov.io/gh/StuckNot/railway_dio)
 [![style: lints](https://img.shields.io/badge/style-lints-4BC0F5.svg)](https://pub.dev/packages/lints)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
@@ -11,9 +11,8 @@ A `Dio` client factory and a `Response -> Either<NetworkFailure, T>` mapper for 
 
 ## How it works
 
-1. Build a `Dio` instance with `buildDioClient(baseUrl: ...)` — or use your existing Dio client.
-2. Call `.toEither()` on any Dio request future. You get back `Either<NetworkFailure, T>` — `Right(data)` on success, or `Left(failure)` on failure.
-3. The failure type is **assigned automatically** based on what went wrong (timeout, no connection, 401 unauthorized, 4xx client error, 5xx server error, or unknown).
+1. Build a `Dio` instance with `buildDioClient(baseUrl: ...)` — same setup as plain Dio.
+2. Call `.toEither()` on any Dio request. You get back `Either<NetworkFailure, T>` — `Right(data)` on success, or `Left(failure)` on failure. The failure type is **assigned automatically** based on what went wrong (timeout, no connection, 401 unauthorized, 4xx client error, 5xx server error, or unknown).
 
 ## Why railway_dio over plain Dio?
 
@@ -61,12 +60,11 @@ Add `railway_dio` to your `pubspec.yaml`:
 ```yaml
 dependencies:
   railway_dio: ^0.1.0
-  fpdart: ^1.1.0
 ```
 
 ## Usage
 
-### 1. Without Decoder (Returns raw data)
+### 1. Basic — Just add .toEither() after API call
 If you don't pass a decoder, `.toEither()` returns `Either<NetworkFailure, T>` with the raw response data (e.g. `Map<String, dynamic>` or `List`):
 
 ```dart
@@ -79,11 +77,11 @@ final result = await dio.get<Map<String, dynamic>>('/users/1').toEither();
 
 result.match(
   (failure) => print('Failed: $failure'),
-  (json) => print('User Name: ${json['name']}'),
+  (Map<String, dynamic> json) => print('User Name: ${json['name']}'),
 );
 ```
 
-### 2. With Inline Decoder (Returns typed model)
+### 2. Advanced — With Inline Decoder (Returns typed model)
 Pass a decoder function as the first argument to convert the raw response directly into your domain model (e.g., `User`):
 
 ```dart
@@ -94,11 +92,10 @@ final result = await dio.get<Map<String, dynamic>>('/users/1').toEither(
 
 result.match(
   (failure) => print('Failed: $failure'),
-  (user) => print('Loaded User: ${user.name}'),
+  (User user) => print('Loaded User: ${user.name}'),
 );
 ```
 
-### 3. With Custom Error Decoder (Parses backend error JSON)
 Pass an `errorDecoder` as the second argument to parse structured error payloads from your backend on 4xx/5xx responses:
 
 ```dart
@@ -118,7 +115,7 @@ result.match(
 );
 ```
 
-## Exports
+## What's in here
 
 | Export | Purpose |
 | --- | --- |
@@ -135,17 +132,33 @@ result.match(
 | `NetworkFailure.unauthorized(errorBody)` | Response status was `401`. |
 | `NetworkFailure.clientError(statusCode, message, errorBody)` | Response status was `4xx` (excluding 401). |
 | `NetworkFailure.server(statusCode, message, errorBody)` | Response status was `5xx`. |
+
+## What's NOT in here
+
+- **Auth interception** — token injection and 401 refresh are a feature/app concern, not a transport concern. Wire your own `Interceptor` into `buildDioClient`'s `interceptors` param instead of forking this package.
+- **DTOs / Models** — these belong in each feature's own data layer.
+- **Domain failures** — `NetworkFailure` is an infra-layer type. Map it into your own domain failure type before it reaches your domain/presentation layers.
+- Anything specific to a single feature or client. If a feature needs different behavior, it implements an interface or injects a callback — it never forks this package.
+
 ## Related Packages
 
 Part of the **Railway Suite** for functional error handling in Dart & Flutter:
 
 - [`railway_chopper`](https://pub.dev/packages/railway_chopper) — Railway-oriented error handling for `package:chopper`.
 
+
+## Versioning
+
+Follows semver: PATCH for fixes, MINOR for additive changes, MAJOR for breaking changes to the public surface (the exports listed above).
+
+---
+
 ## Contributing
 
-Generate freezed files:
-
+Everything below is for working on this package itself — not needed if you're just using it as a dependency.
 ```bash
 dart pub get
 dart run build_runner build --delete-conflicting-outputs
+dart analyze
+dart test
 ```
