@@ -21,6 +21,7 @@ extension DioResponseToEither<T> on Future<Response<T>> {
         return right(null as R);
       }
 
+
       if (decoder != null) {
         return right(decoder(data));
       }
